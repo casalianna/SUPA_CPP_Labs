@@ -1,10 +1,10 @@
 #include <iostream>
-#include "CustomFunctions.h"
+#include "CustomFunctions.h" 
 
 using namespace std;
 
 int main() {
-
+ 
     //reading input data and errors
     vector<pair<double, double>> xy_data;
     read_store("input2D_float.txt", xy_data);

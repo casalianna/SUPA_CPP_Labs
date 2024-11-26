@@ -1,5 +1,5 @@
 #include "CustomFunctions.h"
-
+ 
 using namespace std;
 
 void read_store(const string& filename, vector<pair<double, double>>& xy_data) {

@@ -1,5 +1,5 @@
 #ifndef CUSTOM_FUNCTIONS_H
-#define CUSTOM_FUNCTIONS_H
+#define CUSTOM_FUNCTIONS_H 
 
 #include <iostream>
 #include <fstream>
