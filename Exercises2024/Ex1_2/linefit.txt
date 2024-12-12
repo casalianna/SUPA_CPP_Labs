@@ -1,2 +1,0 @@
-p: 0.126266, q: 2.02628
-Reduced chi-squared: 34401.9
