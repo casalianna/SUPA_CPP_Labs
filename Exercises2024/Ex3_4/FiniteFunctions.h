@@ -23,7 +23,7 @@ public:
   void plotData(std::vector<double> &points, int NBins, bool isdata=true); //NB! use isdata flag to pick between data and sampled distributions
   virtual void printInfo(); //Dump parameter info about the current function (Overridable)
   virtual double callFunction(double x); //Call the function with value x (Overridable)
-
+  std::vector<double> sampling(int n, double sigma);
   //Protected members can be accessed by child classes but not users
 protected:
   double m_RMin;
@@ -46,4 +46,42 @@ protected:
   
 private:
   double invxsquared(double x); //The default functional form
+};
+
+class NormalDistribution : public FiniteFunction{ 
+public:
+  NormalDistribution(); //Empty constructor  
+  NormalDistribution(double mu, double sigma, double range_min, double range_max, std::string outfile); //Variable constructor
+protected:
+  double m_mean;
+  double m_stddev;
+private:
+  double normal(double x);
+  virtual double callFunction(double x);
+};
+
+class CauchyLorentz : public FiniteFunction{ 
+public:
+  CauchyLorentz(); //Empty constructor
+  CauchyLorentz(double x0, double gamma, double range_min, double range_max, std::string outfile); //Variable constructor
+protected:
+  double m_loc;
+  double m_scale;
+private:
+  double cauchylorentz(double x);
+  virtual double callFunction(double x);
+};
+
+class NegCrystalBall : public FiniteFunction{ 
+public:
+  NegCrystalBall(); //Empty constructor  
+  NegCrystalBall(double x_bar, double sigma, double alpha, double n, double range_min, double range_max, std::string outfile); //Variable constructor
+protected:
+  double m_xbar;
+  double m_alpha;
+  double m_n;
+  double m_sigma;
+private:
+  double negcrystalball(double x);
+  virtual double callFunction(double x);
 };

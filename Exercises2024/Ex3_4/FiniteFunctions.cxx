@@ -1,7 +1,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "FiniteFunctions.h"
+#include "FiniteFunctions.h" 
+#include <random>
+#include <time.h>
 #include <filesystem> //To check extensions in a nice way
 
 #include "gnuplot-iostream.h" //Needed to produce plots (not part of the course) 
@@ -11,7 +13,7 @@ using std::filesystem::path;
 //Empty constructor
 FiniteFunction::FiniteFunction(){
   m_RMin = -5.0;
-  m_RMax = 5.0;
+  m_RMax = 5.0;  
   this->checkPath("DefaultFunction");
   m_Integral = NULL;
 }
@@ -61,10 +63,28 @@ double FiniteFunction::callFunction(double x) {return this->invxsquared(x);}; //
 Integration by hand (output needed to normalise function when plotting)
 ###################
 */ 
-double FiniteFunction::integrate(int Ndiv){ //private
-  //ToDo write an integrator
-  return -99;  
+
+double FiniteFunction::integrate(int Ndiv) { //Simpson rule for integration
+    if (Ndiv % 2 != 0) {
+        std::cout << "Ndiv must be even for Simpson's Rule. Incrementing Ndiv by 1." << std::endl;
+        Ndiv++;
+    }
+    
+    double step = (m_RMax - m_RMin) / Ndiv; //step size
+    double sum = this->callFunction(m_RMin) + this->callFunction(m_RMax); 
+
+    for (int i = 1; i < Ndiv; ++i) {
+        double x = m_RMin + i * step;
+        if (i % 2 == 0) { //Even indices
+            sum += 2 * this->callFunction(x);
+        } else { //Odd indices
+            sum += 4 * this->callFunction(x);
+        }
+    }
+
+    return sum * step / 3.0; //return the computed integral
 }
+
 double FiniteFunction::integral(int Ndiv) { //public
   if (Ndiv <= 0){
     std::cout << "Invalid number of divisions for integral, setting Ndiv to 1000" <<std::endl;
@@ -234,4 +254,127 @@ void FiniteFunction::generatePlot(Gnuplot &gp){
     gp << "plot '-' with points ps 2 lc rgb 'blue' title 'sampled data'\n";
     gp.send1d(m_samples);
   }
+}
+
+//Empty constructors
+
+NormalDistribution::NormalDistribution(){
+    m_RMin = -5.0;
+    m_RMax = 5.0;
+    this->checkPath("NormalDistribution"); 
+    m_Integral = NULL;
+}
+
+CauchyLorentz::CauchyLorentz(){
+    m_RMin = -5.0;
+    m_RMax = 5.0;
+    this->checkPath("CauchyLorentzDistribution"); 
+    m_Integral = NULL;
+}
+
+NegCrystalBall::NegCrystalBall(){
+    m_RMin = -5.0;
+    m_RMax = 5.0;
+    this->checkPath("NegCrystalBallDistribution"); 
+    m_Integral = NULL;
+}
+
+//Initialised constructors 
+
+NormalDistribution::NormalDistribution(double mu, double sigma, double range_min, double range_max, std::string outfile) {
+  m_RMin = range_min;
+  m_RMax = range_max;
+  m_mean = mu;
+  m_stddev = sigma;
+  m_Integral = NULL;
+  this->checkPath(outfile);
+}
+
+CauchyLorentz::CauchyLorentz(double x0, double gamma, double range_min, double range_max, std::string outfile) {
+  m_RMin = range_min;
+  m_RMax = range_max;
+  m_loc = x0;
+  m_scale = gamma;
+  m_Integral = NULL;
+  this->checkPath(outfile);
+}
+
+NegCrystalBall::NegCrystalBall(double x_bar, double sigma, double alpha, double n, double range_min, double range_max, std::string outfile) {
+  m_RMin = range_min;
+  m_RMax = range_max;
+  m_xbar = x_bar;
+  m_sigma = sigma;
+  m_alpha = alpha;
+  m_n = n;
+  m_Integral = NULL;
+  this->checkPath(outfile);
+}
+
+double NormalDistribution::normal(double x){
+
+  double N = 1.0/(m_stddev*std::sqrt(2*M_PI));
+  double exp = std::exp(-(1.0/2.0)*std::pow((x-m_mean)/m_stddev,2));
+
+  return N*exp;
+}
+double NormalDistribution::callFunction(double x) {return this->normal(x);}; //(overridable)
+
+double CauchyLorentz::cauchylorentz(double x){
+
+  double den = 1 + std::pow((x-m_loc)/m_scale,2);
+  return 1.0/den;
+}
+double CauchyLorentz::callFunction(double x) {return this->cauchylorentz(x);}; //(overridable)
+
+double NegCrystalBall::negcrystalball(double x){
+
+  double A = std::pow(m_n/std::abs(m_alpha),m_n) * std::exp(-std::pow(std::abs(m_alpha),2)/2);
+  double B = m_n/std::abs(m_alpha) - std::abs(m_alpha);
+  double C = m_n/std::abs(m_alpha) * (1.0/(m_n-1)) * std::exp(-std::pow(std::abs(m_alpha),2)/2);
+  double D = std::sqrt(M_PI/2) * (1 + std::erf(std::abs(m_alpha)/std::sqrt(2)));
+  double N = 1.0/(m_sigma*(C+D));
+
+  if ((x-m_xbar)/m_sigma > -m_alpha){
+    return N*std::exp(-std::pow((x-m_xbar)/(std::sqrt(2)*m_sigma),2));
+  }
+  else if ((x-m_xbar)/m_sigma <= -m_alpha){
+    return N*A*(std::pow(B - (x-m_xbar)/m_sigma,-m_n));
+  }
+}
+double NegCrystalBall::callFunction(double x) {return this->negcrystalball(x);}; //(overridable)
+
+// Sampling
+std::vector<double> FiniteFunction::sampling(int n, double sigma) {
+ 
+    auto seed = time(NULL);
+    std::mt19937 mtEngine{static_cast<unsigned int>(seed)};
+
+    // Uniform distributions
+    std::uniform_real_distribution<double> uniform{m_RMin, m_RMax};
+    std::uniform_real_distribution<double> uniform_0_1{0.0, 1.0};
+
+    double x_i = uniform(mtEngine); //starting point
+
+    std::vector<double> sampled_data;
+
+    //Metropolis-Hastings 
+    for (int i = 0; i < n; ++i) {
+        //new proposal y from a normal distribution centered at x_i
+        std::normal_distribution<double> gaussian{x_i, sigma};
+        double y = gaussian(mtEngine);
+
+        double f_y = this->callFunction(y);
+        double f_x_i = this->callFunction(x_i);
+        double A = std::min(f_y / f_x_i, 1.0); //acceptance probability 
+        double T = uniform_0_1(mtEngine); //threshold
+
+        //acceptance criterion
+        if (T < A) {
+            sampled_data.push_back(y); 
+            x_i = y;                  
+        } else {
+            sampled_data.push_back(x_i); 
+        }
+    }
+    return sampled_data;
 }
